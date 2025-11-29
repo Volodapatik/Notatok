@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мої нотатки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .current-date {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .create-note {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .create-note input,
+        .create-note textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .create-note textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .create-note button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .create-note button:active {
+            background: #45a049;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+
+        .note {
+            border-bottom: 1px solid #eee;
+        }
+
+        .note:last-child {
+            border-bottom: none;
+        }
+
+        .note-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .note-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-btn, .delete-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn {
+            background: #2196F3;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .note-content {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            background: #f9f9f9;
+            color: #555;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .note-content.active {
+            padding: 15px 20px;
+            max-height: 500px;
+        }
+
+        .note-date {
+            color: #888;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .clipboard-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            background: #f9f9f9;
+        }
+
+        .clipboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .clipboard-text {
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+        }
+
+        .clipboard-date {
+            color: #888;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 30px 20px;
+            font-style: italic;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Мої нотатки</h1>
+            <div class="current-date" id="currentDate"></div>
+        </div>
+
+        <!-- Форма створення нотатки -->
+        <div class="create-note">
+            <input type="text" id="noteTitle" placeholder="Заголовок нотатки">
+            <textarea id="noteContent" placeholder="Текст нотатки..."></textarea>
+            <button onclick="createNote()">💾 Зберегти нотатку</button>
+        </div>
+
+        <!-- Секція нотаток -->
+        <div class="section">
+            <div class="section-header">📝 Мої нотатки</div>
+            <div id="notesList">
+                <!-- Нотатки будуть тут -->
+            </div>
+            <div class="empty-state" id="emptyNotes" style="display: none;">
+                Немає нотаток<br>
+                <small>Створіть свою першу нотатку!</small>
+            </div>
+        </div>
+
+        <!-- Секція буфера обміну -->
+        <div class="section">
+            <div class="section-header">📋 Буфер обміну</div>
+            <div id="clipboardList">
+                <!-- Скопійовані тексти будуть тут -->
+            </div>
+            <div class="empty-state" id="emptyClipboard">
+                Буфер обміну порожній<br>
+                <small>Скопіюйте текст з нотатки</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">Текст скопійовано!</div>
+
+    <script>
+        // Дані
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        let clipboard = JSON.parse(localStorage.getItem('clipboard')) || [];
+
+        // Оновлення дати
+        function updateDate() {
+            const now = new Date();
+            const options = { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentDate').textContent = 
+                'Сьогодні, ' + now.toLocaleDateString('uk-UA', options);
+        }
+
+        // Сповіщення
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        // Створення нотатки
+        function createNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            
+            if (!title || !content) {
+                showNotification('❌ Заповніть заголовок і текст');
+                return;
+            }
+
+            const newNote = {
+                id: Date.now(),
+                title: title,
+                content: content,
+                date: new Date().toLocaleString('uk-UA')
+            };
+
+            notes.unshift(newNote);
+            saveData();
+            renderNotes();
+            
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+            
+            showNotification('✅ Нотатку збережено!');
+        }
+
+        // Збереження даних
+        function saveData() {
+            localStorage.setItem('notes', JSON.stringify(notes));
+            localStorage.setItem('clipboard', JSON.stringify(clipboard));
+        }
+
+        // Копіювання тексту
+        async function copyNoteContent(event, noteId) {
+            event.stopPropagation();
+            
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                try {
+                    await navigator.clipboard.writeText(note.content);
+                    
+                    // Додаємо в буфер обміну
+                    const clipboardItem = {
+                        id: Date.now(),
+                        text: note.content,
+                        date: new Date().toLocaleString('uk-UA'),
+                        source: note.title
+                    };
+                    
+                    clipboard.unshift(clipboardItem);
+                    // Обмежуємо буфер до 20 елементів
+                    if (clipboard.length > 20) {
+                        clipboard = clipboard.slice(0, 20);
+                    }
+                    
+                    saveData();
+                    renderClipboard();
+                    showNotification('📋 Текст скопійовано!');
+                } catch (err) {
+                    console.error('Помилка копіювання: ', err);
+                    showNotification('❌ Помилка копіювання');
+                }
+            }
+        }
+
+        // Видалення нотатки
+        function deleteNote(event, noteId) {
+            event.stopPropagation();
+            
+            if (confirm('Видалити цю нотатку?')) {
+                notes = notes.filter(note => note.id !== noteId);
+                saveData();
+                renderNotes();
+                showNotification('🗑️ Нотатку видалено');
+            }
+        }
+
+        // Видалення з буфера
+        function deleteFromClipboard(event, itemId) {
+            event.stopPropagation();
+            
+            clipboard = clipboard.filter(item => item.id !== itemId);
+            saveData();
+            renderClipboard();
+            showNotification('🗑️ Видалено з буфера');
+        }
+
+        // Відображення нотаток
+        function renderNotes() {
+            const notesList = document.getElementById('notesList');
+            const emptyNotes = document.getElementById('emptyNotes');
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = '';
+                emptyNotes.style.display = 'block';
+                return;
+            }
+            
+            emptyNotes.style.display = 'none';
+            
+            notesList.innerHTML = notes.map(note => `
+                <div class="note">
+                    <div class="note-header" onclick="toggleNote(this)">
+                        <div class="note-title">${note.title}</div>
+                        <div class="note-actions">
+                            <button class="copy-btn" onclick="copyNoteContent(event, ${note.id})">Копіювати</button>
+                            <button class="delete-btn" onclick="deleteNote(event, ${note.id})">Видалити</button>
+                        </div>
+                    </div>
+                    <div class="note-content" id="content-${note.id}">
+                        <div class="note-text">${note.content}</div>
+                        <div class="note-date">${note.date}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Відображення буфера обміну
+        function renderClipboard() {
+            const clipboardList = document.getElementById('clipboardList');
+            const emptyClipboard = document.getElementById('emptyClipboard');
+            
+            if (clipboard.length === 0) {
+                clipboardList.innerHTML = '';
+                emptyClipboard.style.display = 'block';
+                return;
+            }
+            
+            emptyClipboard.style.display = 'none';
+            
+            clipboardList.innerHTML = clipboard.map(item => `
+                <div class="clipboard-item">
+                    <div class="clipboard-text">${item.text}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <small style="color: #666;">З: ${item.source}</small>
+                        <button class="delete-btn" onclick="deleteFromClipboard(event, ${item.id})" style="padding: 4px 8px; font-size: 10px;">Видалити</button>
+                    </div>
+                    <div class="clipboard-date">${item.date}</div>
+                </div>
+            `).join('');
+        }
+
+        // Перемикання відображення нотатки
+        function toggleNote(header) {
+            const content = header.nextElementSibling;
+            content.classList.toggle('active');
+        }
+
+        // Ініціалізація
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDate();
+            renderNotes();
+            renderClipboard();
+            
+            // Швидке створення по Ctrl+Enter
+            document.getElementById('noteContent').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    createNote();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
